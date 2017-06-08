@@ -9,7 +9,7 @@ except:
 	import ConfigParser
 from collections import defaultdict as DD
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 configfile = os.path.expanduser('~/.avryprc')
 
 try:

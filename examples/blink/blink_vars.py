@@ -19,6 +19,7 @@ c.chip('atmega328p')
 c.add_source('a.c', '''#include "__avryp.h"
 #include <avr/io.h>
 #include <util/delay.h>
+#include <AVRYPVariables>
 int main(){
 	SETOUTPUT(DDRB, 0);
 	SETOUTPUT(DDRB, 2);
@@ -37,5 +38,5 @@ int main(){
 	}
 }'''
 )
-c.setvar('dt', 300)
+c.setvar('dt', 1000)
 c.build_flash()
