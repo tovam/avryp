@@ -9,7 +9,7 @@ except:
 	import ConfigParser
 from collections import defaultdict as DD
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 configfile = os.path.expanduser('~/.avryprc')
 
 try:
@@ -326,7 +326,7 @@ class Avryp(object):
 		for sc in self.sources:
 			obj = sc.compile()
 			self.objs.append(obj)
-		self.avrgcc('-o{nextoutput} '+(' '.join(self.objs)))
+		self.avrgcc(' -mmcu={chip} -o{nextoutput} '+(' '.join(self.objs)))
 		if flush:
 			map(lambda x:self.cmdself('rm "%s"'%x), self.objs)
 		self.avrobjcopy(' -O ihex {nextoutput} {nextoutput}.hex')

@@ -1,6 +1,8 @@
 import avryp
 
-'''This example make B0 and B2 blink'''
+# This example makes B0 and B2 blink
+# The C code is is given as an argument to the add_source method
+
 
 c = avryp.Avryp()
 
