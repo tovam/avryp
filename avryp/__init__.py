@@ -3,10 +3,13 @@ import time
 import re
 import tempfile
 import subprocess
-import ConfigParser
+try:
+	import configparser as ConfigParser
+except:
+	import ConfigParser
 from collections import defaultdict as DD
 
-__version__ = '0.0.1'
+__version__ = '0.0.5'
 configfile = os.path.expanduser('~/.avryprc')
 
 try:

@@ -31,11 +31,13 @@ classifiers = [
     "Topic :: Software Development"
 ]
 
+readme = os.path.join(os.path.dirname(__file__), 'README.md')
+
 try:
     import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
+    long_description = pypandoc.convert(readme, 'rst')
 except ImportError:
-    long_description = open('README.md').read()
+    long_description = open(readme).read()
 
 setup(
     name='avryp',
@@ -48,7 +50,7 @@ setup(
     url='https://github.com/tovam/avryp',
     license='MIT',
     classifiers=classifiers,
-    install_requires=[],
+    install_requires=['ConfigParser'],
     packages=['avryp'],
     zip_safe=True
 )
