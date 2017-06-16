@@ -14,6 +14,6 @@ c.chip('atmega328p')
 
 # Add source files
 c.add_source('blink.c')
-#c.add_source('dt.c')
+c.add_source('dt.c')
 
 c.build_flash()

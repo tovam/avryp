@@ -9,7 +9,7 @@ except:
 	import ConfigParser
 from collections import defaultdict as DD
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 configfile = os.path.expanduser('~/.avryprc')
 
 try:
@@ -337,7 +337,7 @@ class Avryp(object):
 		if output:
 			hexfile = repr(output)
 		elif self.avrexists('output'):
-			hexfile = repr(self.getavr('output'))
+			hexfile = repr(self.getavr('output')+'.hex')
 		else:
 			raise Exception("A project must be built before flashing or a filename must be given as an argument to flash")
 		ret = self.avrdude('-p {chip}')

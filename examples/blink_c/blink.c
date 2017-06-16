@@ -2,29 +2,28 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-//void delayms(int ms){
-//	for(int i=0;i<ms;i+=10)_delay_ms(10);
-//}
+void delayms(int ms){
+	for(int i=0;i<ms;i+=10)_delay_ms(10);
+}
 
-//int dt(){return 500;}
+int dt();
 
 int main(){
-    SETOUTPUT(DDRD, 0);
-    SETOUTPUT(DDRD, 1);
-    SETHIGH(PORTD, 0);
-    SETHIGH(PORTD, 1);
+    SETOUTPUT(DDRB, 0);
+    SETOUTPUT(DDRB, 2);
+    SETHIGH(PORTB, 0);
+    SETHIGH(PORTB, 2);
 
-	int delay = 500; //dt();
+	int delay = dt();
 
     while(1){
-//        delayms(delay);
-        _delay_ms(500);
-        SETHIGH(PORTD, 0);
-        _delay_ms(500);
-        SETHIGH(PORTD, 1);
-        _delay_ms(500);
-        SETLOW(PORTD, 0);
-        _delay_ms(500);
-        SETLOW(PORTD, 1);
+        delayms(delay);
+        SETHIGH(PORTB, 0);
+        delayms(delay);
+        SETHIGH(PORTB, 2);
+        delayms(delay);
+        SETLOW(PORTB, 0);
+        delayms(delay);
+        SETLOW(PORTB, 2);
     }
 }

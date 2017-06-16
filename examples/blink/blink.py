@@ -18,20 +18,20 @@ c.add_source('a.c', '''#include "__avryp.h"
 #include <avr/io.h>
 #include <util/delay.h>
 int main(){
-	SETOUTPUT(DDRD, 0);
-	SETOUTPUT(DDRD, 1);
-	SETHIGH(PORTD, 0);
-	SETHIGH(PORTD, 1);
+	SETOUTPUT(DDRB, 0);
+	SETOUTPUT(DDRB, 2);
+	SETHIGH(PORTB, 0);
+	SETHIGH(PORTB, 2);
 
 	while(1){
 		_delay_ms(300);
-		SETHIGH(PORTD, 0);
+		SETHIGH(PORTB, 0);
 		_delay_ms(300);
-		SETHIGH(PORTD, 1);
+		SETHIGH(PORTB, 2);
 		_delay_ms(300);
-		SETLOW(PORTD, 0);
+		SETLOW(PORTB, 0);
 		_delay_ms(300);
-		SETLOW(PORTD, 1);
+		SETLOW(PORTB, 2);
 	}
 }'''
 )
