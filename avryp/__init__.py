@@ -101,9 +101,9 @@ class SourceCode(object):
 
 		fullcontent = self.getcontent()
 
-		if '#include <AVRYPFunctions>' in fullcontent:
+		if '\n#include <AVRYPFunctions>' in fullcontent:
 			fullcontent = fullcontent.replace('#include <AVRYPFunctions>','')
-		if '#include <AVRYPVariables>' in fullcontent:
+		if '\n#include <AVRYPVariables>' in fullcontent:
 			fullcontent = re.sub('\$avryp_([a-zA-Z0-9_]+)',avrvar,fullcontent)
 			fullcontent = fullcontent.replace('#include <AVRYPVariables>','')
 
@@ -134,7 +134,7 @@ class SourceCode(object):
 		precomp = self.precompile()
 		objfile = output or precomp + '.o'
 
-		cmd = self.gcc + ' ' + precomp + ' -mmcu={chip} -DF_CPU={freq} {defines} -o' + objfile + ' '+self.flags+' -c '
+		cmd = self.gcc + ' ' + self.flags + ' ' + precomp + ' -mmcu={chip} -DF_CPU={freq} {defines} -o' + objfile + ' -c '
 		cmd += ''.join( map(lambda x:" -I"+x, incs) )
 		cplt.s(cmd)
 		return objfile
@@ -154,9 +154,9 @@ def createSourceCodeType(vext, vgcc, vflags):
 	return SourceCodeType
 
 SourceCodeTypes = {
-	'C':   createSourceCodeType('c','avr-g++','-Wall -Os'),
+	'C':   createSourceCodeType('c','avr-gcc','-Wall -Os -std=c99'),
 	'CPP': createSourceCodeType('cpp','avr-g++','-Wall -Os'),
-	'ASM': createSourceCodeType('S','avr-g++','-Wall -Os'),
+	'ASM': createSourceCodeType('S','avr-g++','-Wall -Os -x assembler-with-cpp'),
 }
 
 class Avryp(object):
@@ -306,10 +306,6 @@ class Avryp(object):
 		self.setavr('chip', v.lower())
 
 	def _prebuild(self):
-		if not self.avrexists('output'):
-			self.setavr('nextoutput', 'program')
-		else:
-			self.setavr('nextoutput', self.formatstring(self.getavr('output')))
 		if not self.avrexists('chip'):
 			raise Exception("No chip given")
 		if not self.avrexists('freq'):
@@ -317,7 +313,8 @@ class Avryp(object):
 			print("Frequency from avrdude: "+str(self.getavr('freq')))
 		return 1
 
-	def build(self, flush=True):
+	def build(self, output=None, flush=True):
+		self.setavr('output', output or 'program')
 		if not self.sources:
 			raise Exception("Build error: no source files")
 		if not self._prebuild():
@@ -326,26 +323,33 @@ class Avryp(object):
 		for sc in self.sources:
 			obj = sc.compile()
 			self.objs.append(obj)
-		self.avrgcc(' -mmcu={chip} -o{nextoutput} '+(' '.join(self.objs)))
+		self.avrgcc(' -mmcu={chip} -o{output} '+(' '.join(self.objs)))
 		if flush:
 			map(lambda x:self.cmdself('rm "%s"'%x), self.objs)
-		self.avrobjcopy(' -O ihex {nextoutput} {nextoutput}.hex')
-		print(self.avrsize(' -C --mcu={chip} {nextoutput}'))
+		self.avrobjcopy(' -O ihex {output} {output}.hex')
+		print(self.avrsize(' -C --mcu={chip} {output}'))
 		if flush:
-			self.cmdself('rm "{nextoutput}"')
+			self.cmdself('rm "{output}"')
 		return self
 
-	def flash(self, flush=True):
+	def flash(self, output=None, flush=False):
+		assert self.avrexists('chip'), "Chip must be set before flashing"
+		if output:
+			hexfile = repr(output)
+		elif self.avrexists('output'):
+			hexfile = repr(self.getavr('output'))
+		else:
+			raise Exception("A project must be built before flashing or a filename must be given as an argument to flash")
 		ret = self.avrdude('-p {chip}')
 		if 'AVR device initialized' not in ret and not self.dryrun:
 			print("Error: uploading failed because AVR device can't be initialized")
 			print(ret)
 			return
-		print(self.avrdude('-p {chip} -U flash:w:{nextoutput}.hex'))
+		print(self.avrdude('-p {chip} -U flash:w:' + hexfile + ':i'))
 		if flush:
-			self.cmdself('rm "{nextoutput}.hex"')
+			self.cmdself('rm '+hexfile)
 
-	def build_flash(self, flush=True):
-		self.build(flush)
-		self.flash(flush)
+	def build_flash(self, *a, **kw):
+		self.build(*a, **kw)
+		self.flash(*a, **kw)
 
