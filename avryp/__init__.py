@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import time
 import re
@@ -7,15 +8,15 @@ try:
 	import configparser as ConfigParser
 except:
 	import ConfigParser
-from collections import defaultdict as DD
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 configfile = os.path.expanduser('~/.avryprc')
 
 try:
 	import colorama as COLOR
 except:
-	COLOR = type('fake_colorama',(),{'__getattr__':(lambda s,x:type('fake_colorama.'+x,(),{'__getattr__':(lambda ss,y:'')})())})()
+	COLOR = type('fake_colorama', (), {'__getattr__': (lambda s, x: \
+type('fake_colorama.'+x, (), {'__getattr__': (lambda ss, y: '')})())})()
 
 def oss(cmd, *a, **kw):
 	fcmd = cmd.format(*a, **kw)
@@ -30,7 +31,8 @@ def write_file_in_tempdir(nf, content):
 
 def fixgpio(gpio):
 	oss('echo "%d" > /sys/class/gpio/unexport' % int(gpio))
-	time.sleep(0.1)  #https://raspberrypi.stackexchange.com/questions/23162/gpio-value-file-appears-with-wrong-permissions-momentarily
+	time.sleep(0.1)
+	#https://raspberrypi.stackexchange.com/questions/23162/
 
 def config_get_or_none(cfg, section, option, default=None):
 	try:
@@ -42,15 +44,15 @@ class Fuses(object):
 	def __init__(self, chip, cplt=None):
 		self.chip = chip
 		self.cplt = cplt or Avryp()
+		self.fuses = dict()
 	def fromavrdude(self):
 		c = self.cplt.avrdude(' -p {}', self.chip)
-		d = c.split('Fuses OK ')[1].split('\n')[0]
 		rfa = re.findall('([a-zA-Z]+):([a-fA-F0-9]+)', c)
-		self.fuses = dict(map(lambda x:(x[0], int(x[1], 16)), rfa))
+		self.fuses = dict(map(lambda x: (x[0], int(x[1], 16)), rfa))
 		return self
 	def getmonobit(self, fuse, bitno):
-		return ( self.fuses[fuse] & (1<<bitno) ) >> bitno
-	def getbits(self, fuse, lowestbit, bitsize, littleendian = False):
+		return (self.fuses[fuse] & (1<<bitno)) >> bitno
+	def getbits(self, fuse, lowestbit, bitsize, littleendian=False):
 		rb = ''
 		for bit in range(lowestbit + bitsize - 1, lowestbit - 1, -1):
 			rb = str(self.getmonobit(fuse, bit))
@@ -102,17 +104,17 @@ class SourceCode(object):
 		fullcontent = self.getcontent()
 
 		if '\n#include <AVRYPFunctions>' in fullcontent:
-			fullcontent = fullcontent.replace('#include <AVRYPFunctions>','')
+			fullcontent = fullcontent.replace('#include <AVRYPFunctions>', '')
 		if '\n#include <AVRYPVariables>' in fullcontent:
-			fullcontent = re.sub('\$avryp_([a-zA-Z0-9_]+)',avrvar,fullcontent)
-			fullcontent = fullcontent.replace('#include <AVRYPVariables>','')
+			fullcontent = re.sub(r'\$avryp_([a-zA-Z0-9_]+)', avrvar, fullcontent)
+			fullcontent = fullcontent.replace('#include <AVRYPVariables>', '')
 
 		f = tempfile.NamedTemporaryFile(prefix=fnonly+'___', suffix=self.extension, delete=False)
 		f.write(fullcontent)
 		f.close()
 		return f.name
 	def getcontent(self):
-		if self.content == None:
+		if self.content is None:
 			self.content = open(self.sourcefn, 'r').read()
 		return self.content
 	def compile(self, output=None):
@@ -134,8 +136,9 @@ class SourceCode(object):
 		precomp = self.precompile()
 		objfile = output or precomp + '.o'
 
-		cmd = self.gcc + ' ' + self.flags + ' ' + precomp + ' -mmcu={chip} -DF_CPU={freq} {defines} -o' + objfile + ' -c '
-		cmd += ''.join( map(lambda x:" -I"+x, incs) )
+		cmd = self.gcc + ' ' + self.flags + ' ' + precomp + \
+' -mmcu={chip} -DF_CPU={freq} {defines} -o' + objfile + ' -c '
+		cmd += ''.join(map(lambda x: " -I"+x, incs))
 		cplt.s(cmd)
 		return objfile
 	def add_include_dir(self, d):
@@ -154,9 +157,9 @@ def createSourceCodeType(vext, vgcc, vflags):
 	return SourceCodeType
 
 SourceCodeTypes = {
-	'C':   createSourceCodeType('c','avr-gcc','-Wall -Os -std=c99'),
-	'CPP': createSourceCodeType('cpp','avr-g++','-Wall -Os'),
-	'ASM': createSourceCodeType('S','avr-g++','-Wall -Os -x assembler-with-cpp'),
+	'C': createSourceCodeType('c', 'avr-gcc', '-Wall -Os -std=c99'),
+	'CPP': createSourceCodeType('cpp', 'avr-g++', '-Wall -Os'),
+	'ASM': createSourceCodeType('S', 'avr-g++', '-Wall -Os -x assembler-with-cpp'),
 }
 
 class Avryp(object):
@@ -173,13 +176,19 @@ class Avryp(object):
 		self.dryrun = dryrun
 		self.incdirs = []
 
-		self.haa =             config_get_or_none(self.config, 'arduino', 'haa') #/path/to/hardware/arduino/avr/
-		self.avrdudebin =      config_get_or_none(self.config, 'binaries', 'avrdude', 'avrdude')
-		self.avrdudeprogtype = config_get_or_none(self.config, 'binaries', 'avrdude_progtype', 'linuxgpio')
-		self.avrobjcopybin =   config_get_or_none(self.config, 'binaries', 'avrobjcopy', 'avr-objcopy')
-		self.avrsizebin =      config_get_or_none(self.config, 'binaries', 'avrsize', 'avr-size')
-		self.avrgccbin =       config_get_or_none(self.config, 'binaries', 'avrgcc', 'avr-gcc')
-		self.avrgppbin =       config_get_or_none(self.config, 'binaries', 'avrgpp', 'avr-g++')
+		self.haa = config_get_or_none(self.config, 'arduino', 'haa') #/path/to/hardware/arduino/avr/
+		self.avrdudebin = config_get_or_none(self.config, \
+					'binaries', 'avrdude', 'avrdude')
+		self.avrdudeprogtype = config_get_or_none(self.config, \
+					'binaries', 'avrdude_progtype', 'linuxgpio')
+		self.avrobjcopybin = config_get_or_none(self.config, \
+					'binaries', 'avrobjcopy', 'avr-objcopy')
+		self.avrsizebin = config_get_or_none(self.config, \
+					'binaries', 'avrsize', 'avr-size')
+		self.avrgccbin = config_get_or_none(self.config, \
+					'binaries', 'avrgcc', 'avr-gcc')
+		self.avrgppbin = config_get_or_none(self.config, \
+					'binaries', 'avrgpp', 'avr-g++')
 		self.load_chips()
 
 	def formatstring(self, cmd, *a, **kw):
@@ -216,19 +225,22 @@ class Avryp(object):
 		if gpio:
 			fixgpio(gpio[0])
 			c = self.s(cmd, *a, **kw)
-		if re.findall("Can't open gpioX/direction: Permission denied",c):    #avrdude bug: gpio port is still exported
-			c = self.s(self.avrdudebin+' -c '+self.avrdudeprogtype+' -p AT90PWM2 -F 2>&1')
-			fixgpio(re.findall("Can't export GPIO (.*), already exported/busy.: Device or resource busy", c)[0])
+		if re.findall("Can't open gpioX/direction: Permission denied", c):
+			#avrdude bug: gpio port is still exported
+			c = self.s(self.avrdudebin+' -c '+ \
+				self.avrdudeprogtype+' -p AT90PWM2 -F 2>&1')
+			fixgpio(re.findall("Can't export GPIO (.*), already exported/busy.:"
+						" Device or resource busy", c)[0])
 			raise Exception("Requires root permissions (GPIO)")
 		return c
 
 	def load_chips(self):
-		c = open('/etc/avrdude.conf','r').read()
+		c = open('/etc/avrdude.conf', 'r').read()
 		lastidx = 0
 		CHIPS = {}
 		for m in re.compile('signature[ =\t]*0x([^ ;]*) *0x([^ ;]*) *0x([^ ;]*) *;').finditer(c):
-			st, g = m.start(), m.group(0)
-			partidx = c.rfind('part',lastidx,st)
+			st = m.start()
+			partidx = c.rfind('part', lastidx, st)
 			chip = re.findall('desc[ =\t]*(.*);', c[partidx:st])[0][1:-1]
 			sig = ''.join(m.groups())
 			CHIPS[chip] = int(sig, 16)
@@ -250,8 +262,8 @@ class Avryp(object):
 		c = self.avrdude(' -p AT90PWM2 -F')
 		if verbose:
 			print(c)
-		if not 'Expected signature' in c:
-			return randchip
+		if 'Expected signature' not in c:
+			return 'AT90PWM2'
 		sig = int(re.findall('Device signature = (.*)', c)[0], 16)
 		return self.identify_chip_sig(sig)
 
@@ -259,7 +271,7 @@ class Avryp(object):
 		self.vars[n] = v
 	def add_define(self, v):
 		self.defines.append(v)
-		self.setavr('defines', ' '.join(map(lambda x:'-D'+x, self.defines)))
+		self.setavr('defines', ' '.join(map(lambda x: '-D'+x, self.defines)))
 	def add_include_dir(self, d):
 		self.incdirs.append(d)
 	def add_header(self, nf, content):
@@ -267,18 +279,20 @@ class Avryp(object):
 		self.add_include_dir(tmpincdir)
 	def add_CXAPV(self):
 		self.add_source('cxapv.cpp', 'extern "C" void __cxa_pure_virtual(){while(1);}')
-	def add_source(self, fn, content=None, astype=None, fromarduino=None):
+	def add_source(self, fn, content=None, fromarduino=None):
 		if fromarduino:
 			if not self.haa:
-				raise Exception("HAA unknown: set config/arduino/haa in '%s' to the Arduino/hardware/arduino/avr path"%configfile)
+				raise Exception(("HAA unknown: set config/arduino/haa in '%s' "
+					"to the Arduino/hardware/arduino/avr path")%configfile)
 			return self.add_source(os.path.join(self.haa, fn))
 
 		if not os.path.exists(fn) and not content:
 			raise Exception("File doesn't exist: {}".format(fn))
-		clsok = filter(lambda x:fn.endswith(x.extension), SourceCode.__subclasses__())
-		if len(clsok)==0:
-			raise Exception("Can't find the type of '{}', please check the extension (currently accepted: {})".format(fn, map(lambda x:x.extension, SourceCode.__subclasses__())))
-		assert len(clsok)==1, "Error (add_source): number of corresponding classes:"+str(len(clsok))
+		clsok = filter(lambda x: fn.endswith(x.extension), SourceCode.__subclasses__())
+		if not clsok:
+			errmsg = "Can't find the type of '{}', please check the extension (currently accepted: {})"
+			raise Exception(errmsg.format(fn, map(lambda x: x.extension, SourceCode.__subclasses__())))
+		assert len(clsok) == 1, "Error (add_source): number of corresponding classes:"+str(len(clsok))
 		cls = clsok[0]
 		s = cls(fn, content)
 		s.cplt = self
@@ -294,7 +308,7 @@ class Avryp(object):
 	def setavr(self, a, v):
 		self.avrvars[a] = v
 		if a == 'chip':
-			self.chip = Chip(v, self)
+			self._chip = Chip(v, self)
 		return self
 	def freq(self, v):
 		self.setavr('freq', v)
@@ -309,7 +323,7 @@ class Avryp(object):
 		if not self.avrexists('chip'):
 			raise Exception("No chip given")
 		if not self.avrexists('freq'):
-			self.setavr('freq', self.chip.f_cpu_avrdude())
+			self.setavr('freq', self._chip.f_cpu_avrdude())
 			print("Frequency from avrdude: "+str(self.getavr('freq')))
 		return 1
 
@@ -325,7 +339,7 @@ class Avryp(object):
 			self.objs.append(obj)
 		self.avrgcc(' -mmcu={chip} -o{output} '+(' '.join(self.objs)))
 		if flush:
-			map(lambda x:self.cmdself('rm "%s"'%x), self.objs)
+			map(lambda x: self.cmdself('rm "%s"'%x), self.objs)
 		self.avrobjcopy(' -O ihex {output} {output}.hex')
 		print(self.avrsize(' -C --mcu={chip} {output}'))
 		if flush:
@@ -339,7 +353,8 @@ class Avryp(object):
 		elif self.avrexists('output'):
 			hexfile = repr(self.getavr('output')+'.hex')
 		else:
-			raise Exception("A project must be built before flashing or a filename must be given as an argument to flash")
+			raise Exception("A project must be built before"
+				" flashing or a filename must be given as an argument to flash")
 		ret = self.avrdude('-p {chip}')
 		if 'AVR device initialized' not in ret and not self.dryrun:
 			print("Error: uploading failed because AVR device can't be initialized")

@@ -16,5 +16,23 @@ Avryp is on PyPI so installing it is easy with *pip*.
 
 Examples can be found in the [examples](https://github.com/tovam/avryp/tree/master/examples) directory.
 
+## Configuration
+
+Avryp reads ~/.avryprc for binaries and Arduino library path.
+
+If not given, the default values are the following:
+
+```
+#[arduino]
+#haa = /path/to/hardware/arduino/avr/  #no default, but optional
+[binaries]
+avrdude = avrdude
+avrdude_progtype = linuxgpio
+avrobjcopy = avr-objcopy
+avrsize = avr-size
+avrgcc = avr-gcc
+avrgpp = avr-g++
+```
+
 ## License
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/tovam/avryp/blob/master/LICENSE) file for details
