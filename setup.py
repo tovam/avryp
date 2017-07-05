@@ -44,7 +44,7 @@ setup(
     version=find_version('avryp', '__init__.py'),
     description='Avryp is a Python package to build and flash AVR and Arduino code.',
     long_description=long_description,
-    keywords='avr arduino atmel',
+    keywords=['avr','arduino','atmel'],
     author='tovam',
     author_email='tovamdvlp@gmail.com',
     url='https://github.com/tovam/avryp',

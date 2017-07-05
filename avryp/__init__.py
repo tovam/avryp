@@ -9,7 +9,7 @@ try:
 except:
 	import ConfigParser
 
-__version__ = '0.0.9'
+__version__ = '0.0.10'
 configfile = os.path.expanduser('~/.avryprc')
 
 try:
@@ -109,7 +109,7 @@ class SourceCode(object):
 			fullcontent = re.sub(r'\$avryp_([a-zA-Z0-9_]+)', avrvar, fullcontent)
 			fullcontent = fullcontent.replace('#include <AVRYPVariables>', '')
 
-		f = tempfile.NamedTemporaryFile(prefix=fnonly+'___', suffix=self.extension, delete=False)
+		f = tempfile.NamedTemporaryFile(prefix='avryp_'+fnonly+'___', suffix=self.extension, delete=False)
 		f.write(fullcontent)
 		f.close()
 		return f.name
@@ -337,7 +337,10 @@ class Avryp(object):
 		for sc in self.sources:
 			obj = sc.compile()
 			self.objs.append(obj)
-		self.avrgcc(' -mmcu={chip} -o{output} '+(' '.join(self.objs)))
+		linking_output = self.avrgcc(' -mmcu={chip} -o{output} '+(' '.join(self.objs)))
+		print(linking_output)
+		if re.search('[1-9]\d* exit status$', linking_output):
+			raise Exception("Build error: linking failed")
 		if flush:
 			map(lambda x: self.cmdself('rm "%s"'%x), self.objs)
 		self.avrobjcopy(' -O ihex {output} {output}.hex')
